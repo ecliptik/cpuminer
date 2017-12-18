@@ -8,22 +8,27 @@ LABEL maintainer="ecliptik@gmail.com"
 WORKDIR /cpuminer
 ENTRYPOINT ["./minerd"]
 
+#Install required packages for build and run
 RUN apt update && \
     apt install -y libcurl4-openssl-dev
 
+#Build image
 FROM base AS build
 
+#Install required packages for build
 RUN apt update && \
-    apt install -y automake git make build-essential
+    apt install -y automake make build-essential
 
-RUN git clone https://github.com/pooler/cpuminer
+#Copy source code
+COPY . /cpuminer/
 
-WORKDIR /cpuminer/cpuminer
-
-RUN ./autogen.sh
-RUN ./configure CFLAGS="-O3"
+#Compile binary
+RUN ./autogen.sh && \
+    ./configure CFLAGS="-O3"
 RUN make -j
 
+#Run image
 FROM base AS run
 
-COPY --from=build /cpuminer/cpuminer/minerd /cpuminer/
+#Copy compiled binary to WORKDIR for runtime
+COPY --from=build /cpuminer/minerd /cpuminer/
